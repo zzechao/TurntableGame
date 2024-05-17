@@ -137,8 +137,8 @@ class TurntableView @JvmOverloads constructor(
         bgIconData.bitmap?.let {
             val src = RectF(0f, 0f, it.width.toFloat(), it.height.toFloat())
             val dst = RectF(0f, 0f, measuredWidth.toFloat(), measuredHeight.toFloat())
-            bgIconData.matrix.postRotate(currAngle, center, center)
             bgIconData.matrix.setRectToRect(src, dst, Matrix.ScaleToFit.CENTER)
+            bgIconData.matrix.postRotate(currAngle, center, center)
             canvas?.drawBitmap(it, bgIconData.matrix, mPaint)
         }
 

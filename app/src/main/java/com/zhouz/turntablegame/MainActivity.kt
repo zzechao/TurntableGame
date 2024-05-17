@@ -75,8 +75,6 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 turn.start(0)
-
-                userSize = 0
             }
         }
     }
