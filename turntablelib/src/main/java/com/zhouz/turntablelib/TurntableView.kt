@@ -2,8 +2,8 @@ package com.zhouz.turntablelib
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
-import android.animation.ObjectAnimator
 import android.animation.TimeInterpolator
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.ContextWrapper
@@ -49,7 +49,7 @@ class TurntableView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs, defStyleAttr), ITurntableBuilder {
 
 
-    private var anim: ObjectAnimator? = null
+    private var anim: ValueAnimator? = null
     private var center: Float = 0f
     private val defaultSize = 800
 
@@ -137,6 +137,7 @@ class TurntableView @JvmOverloads constructor(
         bgIconData.bitmap?.let {
             val src = RectF(0f, 0f, it.width.toFloat(), it.height.toFloat())
             val dst = RectF(0f, 0f, measuredWidth.toFloat(), measuredHeight.toFloat())
+            bgIconData.matrix.postRotate(currAngle, center, center)
             bgIconData.matrix.setRectToRect(src, dst, Matrix.ScaleToFit.CENTER)
             canvas?.drawBitmap(it, bgIconData.matrix, mPaint)
         }
@@ -145,6 +146,7 @@ class TurntableView @JvmOverloads constructor(
         // 从最上面开始绘制扇形会好看一点
         var startAngle = -mAngle / 2 - 90
         val radius = measuredWidth / 2f - 105f
+        startAngle += currAngle
         for (i in 0 until numberPart) {
             mPaint.setColor(Color.WHITE)
             mPaint.alpha = 100
@@ -275,14 +277,17 @@ class TurntableView @JvmOverloads constructor(
     fun start(pos: Int) {
         //最低圈数是mMinTimes圈
         anim?.cancel()
+        currAngle = 0f
+
         val newAngle: Int = (360 * mMinTimes + (pos - 1) * mAngle + currAngle).toInt()
         //计算目前的角度划过的扇形份数
-        val num: Int = ((newAngle - currAngle) / mAngle).toInt()
-        anim = ObjectAnimator.ofFloat(this, "rotation", currAngle, newAngle.toFloat())
-        currAngle = newAngle.toFloat()
+        anim = ValueAnimator.ofFloat(currAngle, newAngle.toFloat())
+
         // 动画的持续时间，执行多久？
         anim?.setDuration(mDurationTime)
         anim?.addUpdateListener {   //将动画的过程态回调给调用者
+            currAngle = it.animatedValue as Float
+            postInvalidate()
         }
         val f = floatArrayOf(0f)
         anim?.interpolator = TimeInterpolator { t ->
