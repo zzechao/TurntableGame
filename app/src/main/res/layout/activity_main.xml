@@ -10,4 +10,13 @@
         android:layout_height="350dp"
         android:layout_gravity="center"
         turntableView:CTBackground="@mipmap/bg01" />
+
+
+    <Button
+        android:id="@+id/mStart"
+        android:layout_width="300dp"
+        android:layout_height="50dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="100dp"
+        android:text="start" />
 </FrameLayout>

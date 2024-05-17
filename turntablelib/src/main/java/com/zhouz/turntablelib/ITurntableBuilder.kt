@@ -16,6 +16,8 @@ interface ITurntableBuilder {
     var turntableNeedleIcon: Int
 
     var numberPart: Int
+    var mMinTimes: Int
+    var mDurationTime: Long
 
     var photoLoader: (suspend (Any) -> Bitmap?)?
 
