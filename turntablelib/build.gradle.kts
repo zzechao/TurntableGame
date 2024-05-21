@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.jetbrains.kotlin.android)
+    id("com.android.library")
+    id("kotlin-android")
 }
 
 android {
@@ -28,5 +28,5 @@ android {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
-    api("io.github.zzechao:canvasanimation:1.0.1")
+    implementation("io.github.zzechao:canvasanimation:1.0.1")
 }

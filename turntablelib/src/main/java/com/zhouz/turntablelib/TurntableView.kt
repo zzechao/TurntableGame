@@ -99,6 +99,7 @@ class TurntableView @JvmOverloads constructor(
 
         override var mMinTimes: Int = 6
         override var mDurationTime: Long = 2000L
+        override val startAngle: Float get() = 90 + mAngle / 2f
         override var photoLoader: (suspend (Any) -> Bitmap?)? = null
 
         override fun partyChildBuild(child: IPartyChild.() -> Unit) {
@@ -216,7 +217,7 @@ class TurntableView @JvmOverloads constructor(
 
         // 计算初始角度
         // 从最上面开始绘制扇形会好看一点
-        var startAngle = -mAngle / 2 - 90 + mAngle / 2f
+        var startAngle = -mAngle / 2 - turntableBuilder.startAngle
         val radius = measuredWidth / 2f - 105f
         startAngle += currAngle
         for (i in 0 until turntableBuilder.numberPart) {
@@ -384,18 +385,23 @@ class TurntableView @JvmOverloads constructor(
         return partViews.getOrNull(index)
     }
 
-    fun showAnim(start: PointF, end: PointF, duringTime: Long = 200, callback: suspend () -> Bitmap) {
+    fun showAnim(
+        start: PointF, end: PointF, duringTime: Long = 200,
+        displayHeightSize: Int = 80, callback: suspend () -> Bitmap
+    ) {
         AnimEncoder().buildAnimNode {
             imageNode {
-                this.displayHeightSize = 80
+                this.displayHeightSize = displayHeightSize
                 startNode {
                     point = start
                     scaleX = 1f
                     scaleY = 1f
+                    alpha = 255
                     endNode {
                         point = end
-                        scaleX = 0.5f
-                        scaleY = 0.5f
+                        scaleX = 1f
+                        scaleY = 1f
+                        alpha = 30
                         durTime = duringTime
                         interpolator = InterpolatorEnum.Linear.type
                     }

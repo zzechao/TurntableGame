@@ -18,6 +18,7 @@ interface ITurntableBuilder {
     var numberPart: Int
     var mMinTimes: Int
     var mDurationTime: Long
+    val startAngle: Float
 
     var photoLoader: (suspend (Any) -> Bitmap?)?
 
