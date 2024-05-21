@@ -84,9 +84,10 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.mStart).setOnClickListener {
             if (userSize > 1) {
                 turn.setting({
-                    val position = Random.nextInt(userSize)
-                    Toast.makeText(this@MainActivity, "position:$position", Toast.LENGTH_LONG).show()
-                    turn.startTurn(position)
+                    position = 0
+                    val index = Random.nextInt(userSize)
+                    Toast.makeText(this@MainActivity, "position:$index", Toast.LENGTH_LONG).show()
+                    turn.startTurn(index)
                 }) {
                     numberPart = userSize
                 }
