@@ -29,4 +29,5 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
+    api("io.github.zzechao:canvasanimation:1.0.1")
 }

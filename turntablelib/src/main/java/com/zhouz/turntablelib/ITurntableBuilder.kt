@@ -21,9 +21,9 @@ interface ITurntableBuilder {
 
     var photoLoader: (suspend (Any) -> Bitmap?)?
 
-    fun partyChildBuild(childBuilder: IPartyChild.() -> Unit)
+    fun partyChildBuild(child: IPartyChild.() -> Unit)
 
-    fun build()
+    fun build(finish: (() -> Unit)? = null)
 }
 
 

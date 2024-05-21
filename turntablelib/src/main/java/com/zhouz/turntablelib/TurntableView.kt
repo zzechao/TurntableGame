@@ -2,7 +2,6 @@ package com.zhouz.turntablelib
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
-import android.animation.TimeInterpolator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
@@ -12,19 +11,28 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.PointF
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.FrameLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import com.base.animation.AnimView
+import com.base.animation.item.BitmapDisplayItem
+import com.base.animation.xml.AnimDecoder2
+import com.base.animation.xml.AnimEncoder
+import com.base.animation.xml.buildAnimNode
+import com.base.animation.xml.node.coder.InterpolatorEnum
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.job
@@ -33,6 +41,7 @@ import kotlinx.coroutines.withContext
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.random.Random
 
 
 /**
@@ -43,12 +52,13 @@ import kotlin.math.sin
 
 private const val TAG = "TurntableView"
 
+@OptIn(ObsoleteCoroutinesApi::class)
 @SuppressLint("CustomViewStyleable")
 class TurntableView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
-) : FrameLayout(context, attrs, defStyleAttr), ITurntableBuilder {
+) : FrameLayout(context, attrs, defStyleAttr) {
 
-
+    private var mAnimView: AnimView? = null
     private var anim: ValueAnimator? = null
     private var center: Float = 0f
     private val defaultSize = 800
@@ -59,30 +69,17 @@ class TurntableView @JvmOverloads constructor(
         isDither = true
     }
 
-    override var turntableBg: Int = 0
-    private val bgIconData = IconData()
-
-    override var turntableNeedleBg: Int = 0
-    private val bgNeedleIconData = IconData()
-
-    override var turntableNeedleIcon: Int = 0
-    private val iconTurntableNeedle = IconData()
-
-    override var numberPart: Int = 8
     private val partViews = mutableListOf<View>()
     private var mAngle = 0f
 
 
-    override var mMinTimes: Int = 6
-    override var mDurationTime: Long = 2000L
-
-
     private var centerView: View? = null
 
-
-    override var photoLoader: (suspend (Any) -> Bitmap?)? = null
-
     private var currAngle = 0f
+
+    private val bgIconData = IconData()
+    private val bgNeedleIconData = IconData()
+    private val iconTurntableNeedle = IconData()
 
     private val childBuilder: IPartyChild = object : IPartyChild {
         override var partyChild: (Int) -> View? = {
@@ -91,10 +88,76 @@ class TurntableView @JvmOverloads constructor(
         override var centerChild: View? = null
     }
 
+    private val turntableBuilder: ITurntableBuilder = object : ITurntableBuilder {
+        override var turntableBg: Int = 0
+        override var turntableNeedleBg: Int = 0
 
-    override fun partyChildBuild(child: IPartyChild.() -> Unit) {
-        child.invoke(childBuilder)
+        override var turntableNeedleIcon: Int = 0
+        override var numberPart: Int = 8
+
+        override var mMinTimes: Int = 6
+        override var mDurationTime: Long = 2000L
+        override var photoLoader: (suspend (Any) -> Bitmap?)? = null
+
+        override fun partyChildBuild(child: IPartyChild.() -> Unit) {
+            child.invoke(childBuilder)
+        }
+
+        override fun build(finish: (() -> Unit)?) {
+            Log.i(TAG, "build viewScope:$viewScope")
+            viewScope?.launch(Dispatchers.IO) {
+                withContext(Dispatchers.Main) {
+                    partViews.forEach {
+                        removeView(it)
+                    }
+                    partViews.clear()
+                }
+
+                val bitmapBg = photoLoader?.invoke(turntableBg) ?: return@launch
+                bgIconData.icon = turntableBg
+                bgIconData.bitmap = bitmapBg
+
+                val bitmap = photoLoader?.invoke(turntableNeedleBg) ?: return@launch
+                bgNeedleIconData.icon = turntableNeedleBg
+                bgNeedleIconData.bitmap = bitmap
+
+                val needleBitmap = photoLoader?.invoke(turntableNeedleIcon) ?: return@launch
+                iconTurntableNeedle.icon = turntableNeedleIcon
+                iconTurntableNeedle.bitmap = needleBitmap
+
+                //每一个扇形的角度
+                mAngle = 360f / numberPart
+                Log.i(TAG, "build bitmap:$bitmapBg mAngle:$mAngle numberPart:$numberPart")
+                withContext(Dispatchers.Main) {
+                    for (i in 0 until numberPart) {
+                        val partView = childBuilder.partyChild.invoke(i)
+                        partView?.let {
+                            val width = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.AT_MOST)
+                            val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
+                            partView.measure(width, height)
+                            addView(it, 0)
+                            partViews.add(partView)
+                        }
+                    }
+
+                    if (centerView?.parent == null) {
+                        centerView = childBuilder.centerChild
+                        centerView?.let {
+                            val width = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.AT_MOST)
+                            val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
+                            it.measure(width, height)
+                            addView(it, 0)
+                        }
+                    }
+
+                    invalidate()
+
+                    finish?.invoke()
+                }
+            }
+        }
     }
+
 
     private var viewScope: CoroutineScope? = CoroutineScope(SupervisorJob(getCurrentLifeCycleOwner()?.lifecycleScope?.coroutineContext?.job) + CoroutineExceptionHandler { _, throwable ->
         Log.e(TAG, "throwable happen!", throwable)
@@ -104,12 +167,17 @@ class TurntableView @JvmOverloads constructor(
         attrs?.let {
             val typedArray = context.obtainStyledAttributes(it, R.styleable.customTurntable)
             try {
-                turntableBg = typedArray.getResourceId(R.styleable.customTurntable_CTBackground, 0)
+                //turntableBg = typedArray.getResourceId(R.styleable.customTurntable_CTBackground, 0)
             } finally {
                 typedArray.recycle()
             }
         }
         setWillNotDraw(false)
+    }
+
+    init {
+        mAnimView = AnimView(context)
+        addView(mAnimView)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -123,6 +191,8 @@ class TurntableView @JvmOverloads constructor(
             MeasureSpec.AT_MOST -> min(defaultSize, heightSize.coerceAtMost(widthSize))
             else -> defaultSize
         }
+
+        mAnimView?.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY))
 
         center = width / 2f
 
@@ -144,10 +214,10 @@ class TurntableView @JvmOverloads constructor(
 
         // 计算初始角度
         // 从最上面开始绘制扇形会好看一点
-        var startAngle = -mAngle / 2 - 90
+        var startAngle = -mAngle / 2 - 90 + mAngle / 2f
         val radius = measuredWidth / 2f - 105f
         startAngle += currAngle
-        for (i in 0 until numberPart) {
+        for (i in 0 until turntableBuilder.numberPart) {
             mPaint.setColor(Color.WHITE)
             mPaint.alpha = 100
             mPaint.strokeWidth = 2f
@@ -205,10 +275,13 @@ class TurntableView @JvmOverloads constructor(
         }
     }
 
-    fun setting(builder: ITurntableBuilder.() -> Unit) {
+    fun setting(
+        finish: (() -> Unit)? = null,
+        builder: ITurntableBuilder.() -> Unit
+    ) {
         Log.i(TAG, "setting")
-        builder.invoke(this)
-        build()
+        builder.invoke(turntableBuilder)
+        turntableBuilder.build(finish)
     }
 
     override fun onAttachedToWindow() {
@@ -222,78 +295,32 @@ class TurntableView @JvmOverloads constructor(
         viewScope = null
     }
 
-    override fun build() {
-        Log.i(TAG, "build viewScope:$viewScope")
-        viewScope?.launch(Dispatchers.IO) {
-            withContext(Dispatchers.Main) {
-                partViews.forEach {
-                    removeView(it)
-                }
-                partViews.clear()
-            }
-
-            val bitmapBg = photoLoader?.invoke(turntableBg) ?: return@launch
-            bgIconData.icon = turntableBg
-            bgIconData.bitmap = bitmapBg
-
-            val bitmap = photoLoader?.invoke(turntableNeedleBg) ?: return@launch
-            bgNeedleIconData.icon = turntableNeedleBg
-            bgNeedleIconData.bitmap = bitmap
-
-            val needleBitmap = photoLoader?.invoke(turntableNeedleIcon) ?: return@launch
-            iconTurntableNeedle.icon = turntableNeedleIcon
-            iconTurntableNeedle.bitmap = needleBitmap
-
-            //每一个扇形的角度
-            mAngle = 360f / numberPart
-            Log.i(TAG, "build bitmap:$bitmapBg")
-            withContext(Dispatchers.Main) {
-                for (i in 0 until numberPart) {
-                    val partView = childBuilder.partyChild.invoke(i)
-                    partView?.let {
-                        val width = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.AT_MOST)
-                        val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
-                        partView.measure(width, height)
-                        addView(it)
-                        partViews.add(partView)
-                    }
-                }
-
-                if (centerView?.parent == null) {
-                    centerView = childBuilder.centerChild
-                    centerView?.let {
-                        val width = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.AT_MOST)
-                        val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
-                        it.measure(width, height)
-                        addView(it)
-                    }
-                }
-
-                invalidate()
-            }
-        }
-    }
-
-    fun start(pos: Int) {
+    fun startTurn(pos: Int) {
         //最低圈数是mMinTimes圈
         anim?.cancel()
         currAngle = 0f
+        val newAngle: Int = if (mAngle > 10) {
+            (360f * turntableBuilder.mMinTimes +
+                    (turntableBuilder.numberPart - pos) * mAngle +
+                    currAngle - Random.nextInt(5, mAngle.toInt() - 5)).toInt()
+        } else {
+            (360f * turntableBuilder.mMinTimes +
+                    (turntableBuilder.numberPart - pos) * mAngle +
+                    currAngle - mAngle / 2f).toInt()
+        }
 
-        val newAngle: Int = (360 * mMinTimes + (pos - 1) * mAngle + currAngle).toInt()
+        Log.i(TAG, "startTurn pos:$pos newAngle:${newAngle} mAngle:$mAngle ")
+
         //计算目前的角度划过的扇形份数
         anim = ValueAnimator.ofFloat(currAngle, newAngle.toFloat())
 
         // 动画的持续时间，执行多久？
-        anim?.setDuration(mDurationTime)
+        anim?.setDuration(turntableBuilder.mDurationTime)
         anim?.addUpdateListener {   //将动画的过程态回调给调用者
             currAngle = it.animatedValue as Float
             postInvalidate()
         }
-        val f = floatArrayOf(0f)
-        anim?.interpolator = TimeInterpolator { t ->
-            f[0] = (cos((t + 1) * Math.PI) / 2.0f).toFloat() + 0.5f
-            f[0]
-        }
+        anim?.interpolator = AccelerateDecelerateInterpolator()
         anim?.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
                 super.onAnimationEnd(animation)
@@ -324,5 +351,54 @@ class TurntableView @JvmOverloads constructor(
             context = context.baseContext
         }
         return null
+    }
+
+
+    fun getPartyView(index: Int): View? {
+        return partViews.getOrNull(index)
+    }
+
+    fun showAnim(start: View?, end: View?, duringTime: Long = 200, callback: suspend () -> Bitmap) {
+        start ?: return
+        end ?: return
+        val startwidth = start.measuredWidth
+        val startheight = start.measuredHeight
+        val starttop = start.top
+        val startleft = start.left
+
+        val endwidth = end.measuredWidth
+        val endheight = end.measuredHeight
+        val endtop = end.top
+        val endleft = end.left
+
+        AnimEncoder().buildAnimNode {
+            imageNode {
+                this.displayHeightSize = 80
+                startNode {
+                    point = PointF(startleft + startwidth / 2f, starttop + startheight / 2f)
+                    scaleX = 1f
+                    scaleY = 1f
+                    endNode {
+                        point = PointF(endleft + endwidth / 2f, endtop + endheight / 2f)
+                        scaleX = 0.5f
+                        scaleY = 0.5f
+                        durTime = duringTime
+                        interpolator = InterpolatorEnum.Linear.type
+                    }
+                }
+            }
+        }.apply {
+            viewScope?.launch(Dispatchers.IO) {
+                val animView = mAnimView ?: return@launch
+                AnimDecoder2.suspendPlayAnimWithAnimNode(animView, this@apply) { _, displayItem ->
+                    when (displayItem) {
+                        is BitmapDisplayItem -> {
+                            displayItem.mBitmap = callback.invoke()
+                        }
+                    }
+                    displayItem
+                }
+            }
+        }
     }
 }
