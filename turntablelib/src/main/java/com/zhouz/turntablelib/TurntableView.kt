@@ -358,28 +358,16 @@ class TurntableView @JvmOverloads constructor(
         return partViews.getOrNull(index)
     }
 
-    fun showAnim(start: View?, end: View?, duringTime: Long = 200, callback: suspend () -> Bitmap) {
-        start ?: return
-        end ?: return
-        val startwidth = start.measuredWidth
-        val startheight = start.measuredHeight
-        val starttop = start.top
-        val startleft = start.left
-
-        val endwidth = end.measuredWidth
-        val endheight = end.measuredHeight
-        val endtop = end.top
-        val endleft = end.left
-
+    fun showAnim(start: PointF, end: PointF, duringTime: Long = 200, callback: suspend () -> Bitmap) {
         AnimEncoder().buildAnimNode {
             imageNode {
                 this.displayHeightSize = 80
                 startNode {
-                    point = PointF(startleft + startwidth / 2f, starttop + startheight / 2f)
+                    point = start
                     scaleX = 1f
                     scaleY = 1f
                     endNode {
-                        point = PointF(endleft + endwidth / 2f, endtop + endheight / 2f)
+                        point = end
                         scaleX = 0.5f
                         scaleY = 0.5f
                         durTime = duringTime

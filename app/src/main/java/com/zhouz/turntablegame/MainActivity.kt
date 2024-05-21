@@ -3,6 +3,7 @@ package com.zhouz.turntablegame
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.PointF
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -71,9 +72,21 @@ class MainActivity : AppCompatActivity() {
                         this.findViewById<TextView>(R.id.size).text = "x$giftSize"
 
                         val start = turn.getPartyView(position)
-                        Log.i("zzc", "showAnim it:$start")
                         val end = it
-                        turn.showAnim(start, end) {
+                        val startwidth = start?.measuredWidth ?: 0
+                        val startheight = start?.measuredHeight ?: 0
+                        val starttop = start?.top ?: 0
+                        val startleft = start?.left ?: 0
+
+                        val endwidth = end?.measuredWidth ?: 0
+                        val endheight = end?.measuredHeight ?: 0
+                        val endtop = end?.top ?: 0
+                        val endleft = end?.left ?: 0
+
+                        turn.showAnim(
+                            PointF(startleft + startwidth / 2f, starttop + startheight / 2f),
+                            PointF(endleft + endwidth / 2f, endtop + endheight / 2f)
+                        ) {
                             BitmapFactory.decodeResource(this@MainActivity.resources, R.mipmap.head)
                         }
                     }
