@@ -63,6 +63,8 @@ class TurntableView @JvmOverloads constructor(
     private var center: Float = 0f
     private val defaultSize = 800
 
+    private var isTurning = false
+
     private var mPaint: Paint = Paint().apply {
         style = Paint.Style.FILL_AND_STROKE
         isAntiAlias = true
@@ -295,9 +297,19 @@ class TurntableView @JvmOverloads constructor(
         viewScope = null
     }
 
-    fun startTurn(pos: Int) {
-        //最低圈数是mMinTimes圈
+    fun cancelTurn() {
         anim?.cancel()
+    }
+
+    fun startTurn(
+        pos: Int,
+        onStart: (() -> Unit)? = null,
+        onEnd: (() -> Unit)? = null,
+        onCancel: (() -> Unit)? = null
+    ) {
+        if (isTurning) return
+        isTurning = true
+        //最低圈数是mMinTimes圈
         currAngle = 0f
         val newAngle: Int = if (mAngle > 10) {
             (360f * turntableBuilder.mMinTimes +
@@ -312,6 +324,7 @@ class TurntableView @JvmOverloads constructor(
         Log.i(TAG, "startTurn pos:$pos newAngle:${newAngle} mAngle:$mAngle ")
 
         //计算目前的角度划过的扇形份数
+        anim?.cancel()
         anim = ValueAnimator.ofFloat(currAngle, newAngle.toFloat())
 
         // 动画的持续时间，执行多久？
@@ -322,8 +335,21 @@ class TurntableView @JvmOverloads constructor(
         }
         anim?.interpolator = AccelerateDecelerateInterpolator()
         anim?.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationStart(animation: Animator?) {
+                super.onAnimationStart(animation)
+                onStart?.invoke()
+            }
+
             override fun onAnimationEnd(animation: Animator) {
                 super.onAnimationEnd(animation)
+                isTurning = false
+                onEnd?.invoke()
+            }
+
+            override fun onAnimationCancel(animation: Animator?) {
+                super.onAnimationCancel(animation)
+                isTurning = false
+                onCancel?.invoke()
             }
         })
         // 正式开始启动执行动画
