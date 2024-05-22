@@ -29,4 +29,5 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation("io.github.zzechao:canvasanimation:1.0.1")
+    implementation("io.github.tencent:vap:2.0.28")
 }

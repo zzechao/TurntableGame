@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--  xml规范  -->
+
+    <dimen name="turn_needle_top">48dp</dimen>
+
+    <dimen name="turn_view_size">350dp</dimen>
+
+    <dimen name="turn_dividing_width">135dp</dimen>
+</resources>

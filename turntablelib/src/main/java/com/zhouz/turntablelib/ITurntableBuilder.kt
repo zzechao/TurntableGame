@@ -1,5 +1,7 @@
 package com.zhouz.turntablelib
 
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator.AnimatorUpdateListener
 import android.graphics.Bitmap
 import android.view.View
 
@@ -10,17 +12,23 @@ import android.view.View
  * description：声明式构建类
  */
 interface ITurntableBuilder {
-
     var turntableBg: Int
     var turntableNeedleBg: Int
     var turntableNeedleIcon: Int
+    var turntableNeedleTop: Int
 
     var numberPart: Int
     var mMinTimes: Int
     var mDurationTime: Long
-    val startAngle: Float
+    var startAngle: Float
+
+    var dividingLineColor: Int
+    var dividingLineSize: Float
+    var dividingLineWidth: Float
 
     var photoLoader: (suspend (Any) -> Bitmap?)?
+
+    var animatorUpdateListener: AnimatorUpdateListener?
 
     fun partyChildBuild(child: IPartyChild.() -> Unit)
 
@@ -32,4 +40,6 @@ interface IPartyChild {
     var partyChild: (Int) -> View?
 
     var centerChild: View?
+
+    var turntableBgView: View?
 }

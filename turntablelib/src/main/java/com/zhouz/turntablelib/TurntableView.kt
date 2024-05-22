@@ -8,11 +8,8 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.PointF
-import android.graphics.RectF
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
@@ -61,7 +58,7 @@ class TurntableView @JvmOverloads constructor(
     private var mAnimView: AnimView? = null
     private var anim: ValueAnimator? = null
     private var center: Float = 0f
-    private val defaultSize = 800
+    private val defaultSize by lazy { context.resources.getDimensionPixelOffset(R.dimen.turn_view_size) }
 
     private var isTurning = false
 
@@ -76,6 +73,7 @@ class TurntableView @JvmOverloads constructor(
 
 
     private var centerView: View? = null
+    private var turntableBgView: View? = null
 
     private var currAngle = 0f
 
@@ -83,79 +81,117 @@ class TurntableView @JvmOverloads constructor(
     private val bgNeedleIconData = IconData()
     private val iconTurntableNeedle = IconData()
 
-    private val childBuilder: IPartyChild = object : IPartyChild {
-        override var partyChild: (Int) -> View? = {
-            null
+    private val childBuilder: IPartyChild by lazy {
+        object : IPartyChild {
+            override var partyChild: (Int) -> View? = {
+                null
+            }
+            override var centerChild: View? = null
+
+            override var turntableBgView: View? = null
         }
-        override var centerChild: View? = null
     }
 
-    private val turntableBuilder: ITurntableBuilder = object : ITurntableBuilder {
-        override var turntableBg: Int = 0
-        override var turntableNeedleBg: Int = 0
+    private val turntableBuilder: ITurntableBuilder by lazy {
+        object : ITurntableBuilder {
+            override var turntableBg: Int = 0
+            override var turntableNeedleBg: Int = 0
 
-        override var turntableNeedleIcon: Int = 0
-        override var numberPart: Int = 8
+            override var turntableNeedleIcon: Int = 0
+            override var turntableNeedleTop: Int = context.resources.getDimensionPixelOffset(R.dimen.turn_needle_top)
+            override var numberPart: Int = 8
+            override var mMinTimes: Int = 6
+            override var mDurationTime: Long = 2000L
+            override var startAngle: Float = 90f
 
-        override var mMinTimes: Int = 6
-        override var mDurationTime: Long = 2000L
-        override val startAngle: Float get() = 90 + mAngle / 2f
-        override var photoLoader: (suspend (Any) -> Bitmap?)? = null
+            override var dividingLineColor: Int = 0x88FFFFFF.toInt()
+            override var dividingLineSize: Float = 2f
+            override var dividingLineWidth: Float = context.resources.getDimension(R.dimen.turn_dividing_width)
 
-        override fun partyChildBuild(child: IPartyChild.() -> Unit) {
-            child.invoke(childBuilder)
-        }
 
-        override fun build(finish: (() -> Unit)?) {
-            Log.i(TAG, "build viewScope:$viewScope")
-            viewScope?.launch(Dispatchers.IO) {
-                withContext(Dispatchers.Main) {
-                    partViews.forEach {
-                        removeView(it)
-                    }
-                    partViews.clear()
-                }
+            override var photoLoader: (suspend (Any) -> Bitmap?)? = null
+            override var animatorUpdateListener: ValueAnimator.AnimatorUpdateListener? = null
 
-                val bitmapBg = photoLoader?.invoke(turntableBg) ?: return@launch
-                bgIconData.icon = turntableBg
-                bgIconData.bitmap = bitmapBg
+            override fun partyChildBuild(child: IPartyChild.() -> Unit) {
+                child.invoke(childBuilder)
+            }
 
-                val bitmap = photoLoader?.invoke(turntableNeedleBg) ?: return@launch
-                bgNeedleIconData.icon = turntableNeedleBg
-                bgNeedleIconData.bitmap = bitmap
-
-                val needleBitmap = photoLoader?.invoke(turntableNeedleIcon) ?: return@launch
-                iconTurntableNeedle.icon = turntableNeedleIcon
-                iconTurntableNeedle.bitmap = needleBitmap
-
-                //每一个扇形的角度
-                mAngle = 360f / numberPart
-                Log.i(TAG, "build bitmap:$bitmapBg mAngle:$mAngle numberPart:$numberPart")
-                withContext(Dispatchers.Main) {
-                    for (i in 0 until numberPart) {
-                        val partView = childBuilder.partyChild.invoke(i)
-                        partView?.let {
-                            val width = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.AT_MOST)
-                            val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
-                            partView.measure(width, height)
-                            addView(it, 0)
-                            partViews.add(partView)
+            override fun build(finish: (() -> Unit)?) {
+                Log.i(TAG, "build viewScope:$viewScope")
+                viewScope?.launch(Dispatchers.IO) {
+                    withContext(Dispatchers.Main) {
+                        partViews.forEach {
+                            removeView(it)
                         }
+                        partViews.clear()
                     }
 
-                    if (centerView?.parent == null) {
-                        centerView = childBuilder.centerChild
-                        centerView?.let {
-                            val width = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.AT_MOST)
-                            val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
-                            it.measure(width, height)
-                            addView(it, 0)
+                    photoLoader?.invoke(turntableBg)?.let {
+                        bgIconData.icon = turntableBg
+                        bgIconData.bitmap = it
+                    } ?: kotlin.run {
+                        bgIconData.icon = 0
+                        bgIconData.bitmap = null
+                    }
+
+
+                    photoLoader?.invoke(turntableNeedleBg)?.let {
+                        bgNeedleIconData.icon = turntableNeedleBg
+                        bgNeedleIconData.bitmap = it
+                    } ?: kotlin.run {
+                        bgNeedleIconData.icon = 0
+                        bgNeedleIconData.bitmap = null
+                    }
+
+
+                    photoLoader?.invoke(turntableNeedleIcon)?.let {
+                        iconTurntableNeedle.icon = turntableNeedleIcon
+                        iconTurntableNeedle.bitmap = it
+                    } ?: kotlin.run {
+                        iconTurntableNeedle.icon = 0
+                        iconTurntableNeedle.bitmap = null
+                    }
+
+
+                    //每一个扇形的角度
+                    mAngle = 360f / numberPart
+                    Log.i(TAG, "build mAngle:$mAngle numberPart:$numberPart")
+                    withContext(Dispatchers.Main) {
+                        for (i in 0 until numberPart) {
+                            val partView = childBuilder.partyChild.invoke(i)
+                            partView?.let {
+                                val width = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.AT_MOST)
+                                val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
+                                partView.measure(width, height)
+                                addView(it, 0)
+                                partViews.add(partView)
+                            }
                         }
+
+                        if (centerView?.parent == null) {
+                            centerView = childBuilder.centerChild
+                            centerView?.let {
+                                val width = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.AT_MOST)
+                                val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
+                                it.measure(width, height)
+                                addView(it, 0)
+                            }
+                        }
+
+                        if (turntableBgView?.parent == null) {
+                            turntableBgView = childBuilder.turntableBgView
+                            turntableBgView?.let {
+                                val width = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.AT_MOST)
+                                val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
+                                it.measure(width, height)
+                                addView(it, 0)
+                            }
+                        }
+
+                        invalidate()
+
+                        finish?.invoke()
                     }
-
-                    invalidate()
-
-                    finish?.invoke()
                 }
             }
         }
@@ -195,7 +231,10 @@ class TurntableView @JvmOverloads constructor(
             else -> defaultSize
         }
 
-        mAnimView?.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY))
+        mAnimView?.measure(
+            MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY)
+        )
 
         center = width / 2f
 
@@ -207,23 +246,25 @@ class TurntableView @JvmOverloads constructor(
     @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
-        bgIconData.bitmap?.let {
-            val src = RectF(0f, 0f, it.width.toFloat(), it.height.toFloat())
-            val dst = RectF(0f, 0f, measuredWidth.toFloat(), measuredHeight.toFloat())
-            bgIconData.matrix.setRectToRect(src, dst, Matrix.ScaleToFit.CENTER)
+        turntableBgView?.let {
+            val left = (measuredWidth - it.measuredWidth) / 2
+            val top = (measuredHeight - it.measuredHeight) / 2
+            it.layout(left, top, left + it.measuredWidth, top + it.measuredHeight)
+        } ?: bgIconData.bitmap?.let {
+            bgIconData.setMatrix(this)
             bgIconData.matrix.postRotate(currAngle, center, center)
             canvas?.drawBitmap(it, bgIconData.matrix, mPaint)
         }
 
+
         // 计算初始角度
         // 从最上面开始绘制扇形会好看一点
         var startAngle = -mAngle / 2 - turntableBuilder.startAngle
-        val radius = measuredWidth / 2f - 105f
+        val radius = turntableBuilder.dividingLineWidth
         startAngle += currAngle
         for (i in 0 until turntableBuilder.numberPart) {
-            mPaint.setColor(Color.WHITE)
-            mPaint.alpha = 100
-            mPaint.strokeWidth = 2f
+            mPaint.setColor(turntableBuilder.dividingLineColor)
+            mPaint.strokeWidth = turntableBuilder.dividingLineSize
 
             //画一个扇形
             val angleLine = Math.toRadians(startAngle.toDouble())
@@ -232,7 +273,7 @@ class TurntableView @JvmOverloads constructor(
             canvas?.drawLine(center, center, lineX, lineY, mPaint)
 
 
-            val angle = Math.toRadians((startAngle + mAngle / 2).toDouble())
+            val angle = Math.toRadians((startAngle + mAngle / 2f).toDouble())
             //确定图片在圆弧中 中心点的位置
             val x: Float = (center + (radius - 100) * cos(angle)).toFloat()
             val y: Float = (center + (radius - 100) * sin(angle)).toFloat()
@@ -240,7 +281,8 @@ class TurntableView @JvmOverloads constructor(
             val partView = partViews.getOrNull(i)
             partView?.let {
                 it.layout(
-                    (x - it.measuredWidth / 2f).toInt(), (y - it.measuredHeight / 2f).toInt(), (x + it.measuredWidth / 2f).toInt(), (y + it.measuredHeight / 2f).toInt()
+                    (x - it.measuredWidth / 2f).toInt(), (y - it.measuredHeight / 2f).toInt(),
+                    (x + it.measuredWidth / 2f).toInt(), (y + it.measuredHeight / 2f).toInt()
                 )
             }
 
@@ -250,24 +292,16 @@ class TurntableView @JvmOverloads constructor(
         mPaint.alpha = 255
 
         iconTurntableNeedle.bitmap?.let {
-            val src = RectF(0f, 0f, it.width.toFloat(), it.height.toFloat())
-            val dst = RectF(0f, 0f, measuredWidth.toFloat(), measuredHeight.toFloat())
-            iconTurntableNeedle.matrix.setRectToRect(src, dst, Matrix.ScaleToFit.CENTER)
-            iconTurntableNeedle.matrix.postScale(0.12f, 0.12f)
+            iconTurntableNeedle.setMatrix(this)
             val left = (measuredWidth.toFloat() - it.width.toFloat()) / 2f
-            val top = (measuredHeight.toFloat() - it.height.toFloat()) / 2.85f
-            iconTurntableNeedle.matrix.postTranslate(left, top)
+            val top = (measuredHeight.toFloat() - it.height.toFloat()) / 2f -
+                    turntableBuilder.turntableNeedleTop
+            iconTurntableNeedle.matrix.setTranslate(left, top)
             canvas?.drawBitmap(it, iconTurntableNeedle.matrix, mPaint)
         }
 
         bgNeedleIconData.bitmap?.let {
-            val src = RectF(0f, 0f, it.width.toFloat(), it.height.toFloat())
-            val dst = RectF(0f, 0f, measuredWidth.toFloat(), measuredHeight.toFloat())
-            bgNeedleIconData.matrix.setRectToRect(src, dst, Matrix.ScaleToFit.CENTER)
-            bgNeedleIconData.matrix.postScale(0.31f, 0.31f)
-            val left = (measuredWidth.toFloat() - it.width.toFloat()) / 2f
-            val top = (measuredHeight.toFloat() - it.height.toFloat()) / 2f
-            bgNeedleIconData.matrix.postTranslate(left, top)
+            bgNeedleIconData.setMatrix(this)
             canvas?.drawBitmap(it, bgNeedleIconData.matrix, mPaint)
         }
 
@@ -332,6 +366,7 @@ class TurntableView @JvmOverloads constructor(
         anim?.setDuration(turntableBuilder.mDurationTime)
         anim?.addUpdateListener {   //将动画的过程态回调给调用者
             currAngle = it.animatedValue as Float
+            turntableBuilder.animatorUpdateListener?.onAnimationUpdate(it)
             postInvalidate()
         }
         anim?.interpolator = AccelerateDecelerateInterpolator()
