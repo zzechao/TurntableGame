@@ -4,6 +4,7 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator.AnimatorUpdateListener
 import android.graphics.Bitmap
 import android.view.View
+import android.view.animation.Interpolator
 
 
 /**
@@ -25,6 +26,8 @@ interface ITurntableBuilder {
     var dividingLineColor: Int
     var dividingLineSize: Float
     var dividingLineWidth: Float
+
+    var interpolator : Interpolator
 
     var photoLoader: (suspend (Any) -> Bitmap?)?
 

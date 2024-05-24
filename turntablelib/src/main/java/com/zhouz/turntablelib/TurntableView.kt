@@ -14,6 +14,7 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.Interpolator
 import android.widget.FrameLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -107,6 +108,8 @@ class TurntableView @JvmOverloads constructor(
             override var dividingLineColor: Int = 0x88FFFFFF.toInt()
             override var dividingLineSize: Float = 2f
             override var dividingLineWidth: Float = context.resources.getDimension(R.dimen.turn_dividing_width)
+
+            override var interpolator: Interpolator = AccelerateDecelerateInterpolator()
 
 
             override var photoLoader: (suspend (Any) -> Bitmap?)? = null
@@ -275,8 +278,8 @@ class TurntableView @JvmOverloads constructor(
 
             val angle = Math.toRadians((startAngle + mAngle / 2f).toDouble())
             //确定图片在圆弧中 中心点的位置
-            val x: Float = (center + (radius - 100) * cos(angle)).toFloat()
-            val y: Float = (center + (radius - 100) * sin(angle)).toFloat()
+            val x: Float = (center + (radius - context.resources.getDimension(R.dimen.turn_seat_radius_width)) * cos(angle)).toFloat()
+            val y: Float = (center + (radius - context.resources.getDimension(R.dimen.turn_seat_radius_width)) * sin(angle)).toFloat()
 
             val partView = partViews.getOrNull(i)
             partView?.let {
@@ -369,7 +372,7 @@ class TurntableView @JvmOverloads constructor(
             turntableBuilder.animatorUpdateListener?.onAnimationUpdate(it)
             postInvalidate()
         }
-        anim?.interpolator = AccelerateDecelerateInterpolator()
+        anim?.interpolator = turntableBuilder.interpolator
         anim?.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationStart(animation: Animator?) {
                 super.onAnimationStart(animation)

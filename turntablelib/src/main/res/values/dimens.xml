@@ -7,4 +7,6 @@
     <dimen name="turn_view_size">350dp</dimen>
 
     <dimen name="turn_dividing_width">135dp</dimen>
+
+    <dimen name="turn_seat_radius_width">35dp</dimen>
 </resources>
