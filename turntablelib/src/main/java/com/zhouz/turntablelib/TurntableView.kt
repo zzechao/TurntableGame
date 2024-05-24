@@ -421,11 +421,12 @@ class TurntableView @JvmOverloads constructor(
     }
 
     fun showAnim(
-        start: PointF, end: PointF, duringTime: Long = 200,
+        start: PointF, end: PointF, url: String, duringTime: Long = 200,
         displayHeightSize: Int = 80, callback: suspend () -> Bitmap
     ) {
         AnimEncoder().buildAnimNode {
             imageNode {
+                this.url = url
                 this.displayHeightSize = displayHeightSize
                 startNode {
                     point = start

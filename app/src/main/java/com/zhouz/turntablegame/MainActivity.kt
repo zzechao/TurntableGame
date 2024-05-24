@@ -100,7 +100,7 @@ class MainActivity : AppCompatActivity() {
                     (resource as WebpDrawable).start()
 
                     (resource as WebpDrawable).stop()
-                    Log.i(TAG,"${resource.frameIndex}")
+                    Log.i(TAG, "${resource.frameIndex}")
                 }
             })
         //(imageView.drawable as WebpDrawable).stop()
@@ -166,7 +166,7 @@ class MainActivity : AppCompatActivity() {
 
                         turn.showAnim(
                             PointF(startleft + startwidth / 2f, starttop + startheight / 2f),
-                            PointF(endleft + endwidth / 2f, endtop + endheight / 2f)
+                            PointF(endleft + endwidth / 2f, endtop + endheight / 2f), "${R.mipmap.head}"
                         ) {
                             BitmapFactory.decodeResource(this@MainActivity.resources, R.mipmap.head)
                         }
