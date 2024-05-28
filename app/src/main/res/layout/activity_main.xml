@@ -26,4 +26,13 @@
         android:layout_gravity="bottom|center_horizontal"
         android:layout_marginBottom="100dp"
         android:text="start" />
+
+
+    <Button
+        android:id="@+id/mReset"
+        android:layout_width="300dp"
+        android:layout_height="50dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="100dp"
+        android:text="reset" />
 </FrameLayout>

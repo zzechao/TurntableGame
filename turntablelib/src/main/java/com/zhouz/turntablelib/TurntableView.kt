@@ -167,6 +167,7 @@ class TurntableView @JvmOverloads constructor(
                                 val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
                                 partView.measure(width, height)
                                 addView(it, 0)
+                                partView.visibility = View.INVISIBLE
                                 partViews.add(partView)
                             }
                         }
@@ -287,6 +288,7 @@ class TurntableView @JvmOverloads constructor(
                     (x - it.measuredWidth / 2f).toInt(), (y - it.measuredHeight / 2f).toInt(),
                     (x + it.measuredWidth / 2f).toInt(), (y + it.measuredHeight / 2f).toInt()
                 )
+                it.visibility = View.VISIBLE
             }
 
             startAngle += mAngle

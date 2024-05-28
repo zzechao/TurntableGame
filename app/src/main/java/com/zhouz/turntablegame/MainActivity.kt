@@ -196,6 +196,12 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        findViewById<View>(R.id.mReset).setOnClickListener {
+            turn.setting {
+
+            }
+        }
     }
 
     private fun InputStream.okioReadByteArray(): ByteArray {
