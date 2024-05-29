@@ -30,6 +30,7 @@ import com.base.animation.xml.node.coder.InterpolatorEnum
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -39,7 +40,6 @@ import kotlinx.coroutines.withContext
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
-import kotlin.random.Random
 
 
 /**
@@ -56,6 +56,7 @@ class TurntableView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
+    private var visibilityJob: Job? = null
     private var mAnimView: AnimView? = null
     private var anim: ValueAnimator? = null
     private var center: Float = 0f
@@ -121,54 +122,56 @@ class TurntableView @JvmOverloads constructor(
 
             override fun build(finish: (() -> Unit)?) {
                 Log.i(TAG, "build viewScope:$viewScope")
-                viewScope?.launch(Dispatchers.IO) {
-                    withContext(Dispatchers.Main) {
-                        partViews.forEach {
-                            removeView(it)
+                viewScope?.launch(Dispatchers.Main) {
+                    partViews.forEach {
+                        removeView(it)
+                    }
+                    partViews.clear()
+
+                    withContext(Dispatchers.IO) {
+                        photoLoader?.invoke(turntableBg)?.let {
+                            bgIconData.icon = turntableBg
+                            bgIconData.bitmap = it
+                        } ?: kotlin.run {
+                            bgIconData.icon = 0
+                            bgIconData.bitmap = null
                         }
-                        partViews.clear()
+
+
+                        photoLoader?.invoke(turntableNeedleBg)?.let {
+                            bgNeedleIconData.icon = turntableNeedleBg
+                            bgNeedleIconData.bitmap = it
+                        } ?: kotlin.run {
+                            bgNeedleIconData.icon = 0
+                            bgNeedleIconData.bitmap = null
+                        }
+
+
+                        photoLoader?.invoke(turntableNeedleIcon)?.let {
+                            iconTurntableNeedle.icon = turntableNeedleIcon
+                            iconTurntableNeedle.bitmap = it
+                        } ?: kotlin.run {
+                            iconTurntableNeedle.icon = 0
+                            iconTurntableNeedle.bitmap = null
+                        }
                     }
-
-                    photoLoader?.invoke(turntableBg)?.let {
-                        bgIconData.icon = turntableBg
-                        bgIconData.bitmap = it
-                    } ?: kotlin.run {
-                        bgIconData.icon = 0
-                        bgIconData.bitmap = null
-                    }
-
-
-                    photoLoader?.invoke(turntableNeedleBg)?.let {
-                        bgNeedleIconData.icon = turntableNeedleBg
-                        bgNeedleIconData.bitmap = it
-                    } ?: kotlin.run {
-                        bgNeedleIconData.icon = 0
-                        bgNeedleIconData.bitmap = null
-                    }
-
-
-                    photoLoader?.invoke(turntableNeedleIcon)?.let {
-                        iconTurntableNeedle.icon = turntableNeedleIcon
-                        iconTurntableNeedle.bitmap = it
-                    } ?: kotlin.run {
-                        iconTurntableNeedle.icon = 0
-                        iconTurntableNeedle.bitmap = null
-                    }
-
 
                     //每一个扇形的角度
-                    mAngle = 360f / numberPart
-                    Log.i(TAG, "build mAngle:$mAngle numberPart:$numberPart")
                     withContext(Dispatchers.Main) {
+                        mAngle = 360f / numberPart
+                        currAngle = 0f
+                        Log.i(TAG, "build mAngle:$mAngle numberPart:$numberPart")
                         for (i in 0 until numberPart) {
                             val partView = childBuilder.partyChild.invoke(i)
                             partView?.let {
                                 val width = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.AT_MOST)
                                 val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
                                 partView.measure(width, height)
-                                addView(it, 0)
                                 partView.visibility = View.INVISIBLE
                                 partViews.add(partView)
+                                if (partView.parent == null) {
+                                    addView(partView, 0)
+                                }
                             }
                         }
 
@@ -263,11 +266,12 @@ class TurntableView @JvmOverloads constructor(
 
         // 计算初始角度
         // 从最上面开始绘制扇形会好看一点
-        var startAngle = -mAngle / 2 - turntableBuilder.startAngle
+        var startAngle = -turntableBuilder.startAngle
+        Log.i(TAG, "onDraw startAngle:$startAngle ${turntableBuilder.numberPart}")
         val radius = turntableBuilder.dividingLineWidth
         startAngle += currAngle
         for (i in 0 until turntableBuilder.numberPart) {
-            mPaint.setColor(turntableBuilder.dividingLineColor)
+            mPaint.color = turntableBuilder.dividingLineColor
             mPaint.strokeWidth = turntableBuilder.dividingLineSize
 
             //画一个扇形
@@ -317,6 +321,7 @@ class TurntableView @JvmOverloads constructor(
         }
     }
 
+
     fun setting(
         finish: (() -> Unit)? = null,
         builder: ITurntableBuilder.() -> Unit
@@ -351,15 +356,9 @@ class TurntableView @JvmOverloads constructor(
         isTurning = true
         //最低圈数是mMinTimes圈
         currAngle = 0f
-        val newAngle: Int = if (mAngle > 10) {
-            (360f * turntableBuilder.mMinTimes +
-                    (turntableBuilder.numberPart - pos) * mAngle +
-                    currAngle - Random.nextInt(5, mAngle.toInt() - 5)).toInt()
-        } else {
-            (360f * turntableBuilder.mMinTimes +
-                    (turntableBuilder.numberPart - pos) * mAngle +
-                    currAngle - mAngle / 2f).toInt()
-        }
+        val newAngle: Int = (360f * turntableBuilder.mMinTimes +
+                (turntableBuilder.numberPart - pos) * mAngle - mAngle / 2f +
+                currAngle).toInt()
 
         Log.i(TAG, "startTurn pos:$pos newAngle:${newAngle} mAngle:$mAngle ")
 
@@ -372,7 +371,7 @@ class TurntableView @JvmOverloads constructor(
         anim?.addUpdateListener {   //将动画的过程态回调给调用者
             currAngle = it.animatedValue as Float
             turntableBuilder.animatorUpdateListener?.onAnimationUpdate(it)
-            postInvalidate()
+            invalidate()
         }
         anim?.interpolator = turntableBuilder.interpolator
         anim?.addListener(object : AnimatorListenerAdapter() {
