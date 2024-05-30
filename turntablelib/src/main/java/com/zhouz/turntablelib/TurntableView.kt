@@ -13,6 +13,7 @@ import android.graphics.PointF
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
+import android.view.ViewTreeObserver
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.Interpolator
 import android.widget.FrameLayout
@@ -167,10 +168,10 @@ class TurntableView @JvmOverloads constructor(
                                 val width = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.AT_MOST)
                                 val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
                                 partView.measure(width, height)
-                                partView.visibility = View.INVISIBLE
                                 partViews.add(partView)
                                 if (partView.parent == null) {
                                     addView(partView, 0)
+                                    DrawListener(partView).listener()
                                 }
                             }
                         }
@@ -267,7 +268,6 @@ class TurntableView @JvmOverloads constructor(
         // 计算初始角度
         // 从最上面开始绘制扇形会好看一点
         var startAngle = -turntableBuilder.startAngle
-        Log.i(TAG, "onDraw startAngle:$startAngle ${turntableBuilder.numberPart}")
         val radius = turntableBuilder.dividingLineWidth
         startAngle += currAngle
         for (i in 0 until turntableBuilder.numberPart) {
@@ -292,7 +292,6 @@ class TurntableView @JvmOverloads constructor(
                     (x - it.measuredWidth / 2f).toInt(), (y - it.measuredHeight / 2f).toInt(),
                     (x + it.measuredWidth / 2f).toInt(), (y + it.measuredHeight / 2f).toInt()
                 )
-                it.visibility = View.VISIBLE
             }
 
             startAngle += mAngle
@@ -459,6 +458,40 @@ class TurntableView @JvmOverloads constructor(
                     displayItem
                 }
             }
+        }
+    }
+
+    inner class DrawListener(val view: View) : ViewTreeObserver.OnPreDrawListener, OnAttachStateChangeListener {
+
+        private var isAdd = false
+
+        init {
+            view.addOnAttachStateChangeListener(this)
+        }
+
+        fun listener() {
+            if (!isAdd) {
+                isAdd = true
+                view.viewTreeObserver.addOnPreDrawListener(this)
+            }
+        }
+
+        override fun onViewAttachedToWindow(v: View?) {
+        }
+
+        override fun onViewDetachedFromWindow(v: View?) {
+            if (isAdd) {
+                view.viewTreeObserver.removeOnPreDrawListener(this)
+            }
+        }
+
+        override fun onPreDraw(): Boolean {
+            if (view.left == 0 && view.top == 0) {
+                view.visibility = View.INVISIBLE
+            } else {
+                view.visibility = View.VISIBLE
+            }
+            return true
         }
     }
 }
