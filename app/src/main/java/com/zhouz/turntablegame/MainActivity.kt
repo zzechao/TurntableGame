@@ -4,6 +4,7 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.graphics.PointF
 import android.graphics.drawable.Drawable
 import android.os.Bundle
@@ -127,6 +128,8 @@ class MainActivity : AppCompatActivity() {
             turntableNeedleBg = R.mipmap.bg02
             turntableNeedleIcon = R.mipmap.jiantou
             numberPart = 8
+            dividingLineIcon = R.mipmap.dividing_line
+            dividingLineColor = Color.RED
 
             partyChildBuild {
                 partyChild = { index ->

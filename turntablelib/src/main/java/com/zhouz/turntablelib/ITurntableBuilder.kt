@@ -24,6 +24,7 @@ interface ITurntableBuilder {
     var startAngle: Float
 
     var dividingLineColor: Int
+    var dividingLineIcon: Int
     var dividingLineSize: Float
     var dividingLineWidth: Float
 

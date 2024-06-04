@@ -17,6 +17,7 @@ import android.view.ViewTreeObserver
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.Interpolator
 import android.widget.FrameLayout
+import androidx.core.graphics.withSave
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
@@ -31,7 +32,6 @@ import com.base.animation.xml.node.coder.InterpolatorEnum
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -57,7 +57,6 @@ class TurntableView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
-    private var visibilityJob: Job? = null
     private var mAnimView: AnimView? = null
     private var anim: ValueAnimator? = null
     private var center: Float = 0f
@@ -83,6 +82,7 @@ class TurntableView @JvmOverloads constructor(
     private val bgIconData = IconData()
     private val bgNeedleIconData = IconData()
     private val iconTurntableNeedle = IconData()
+    private val iconTurntableDividingLine = IconData()
 
     private val childBuilder: IPartyChild by lazy {
         object : IPartyChild {
@@ -108,6 +108,7 @@ class TurntableView @JvmOverloads constructor(
             override var startAngle: Float = 90f
 
             override var dividingLineColor: Int = 0x88FFFFFF.toInt()
+            override var dividingLineIcon: Int = 0
             override var dividingLineSize: Float = 2f
             override var dividingLineWidth: Float = context.resources.getDimension(R.dimen.turn_dividing_width)
 
@@ -154,6 +155,15 @@ class TurntableView @JvmOverloads constructor(
                         } ?: kotlin.run {
                             iconTurntableNeedle.icon = 0
                             iconTurntableNeedle.bitmap = null
+                        }
+
+                        photoLoader?.invoke(dividingLineIcon)?.let {
+                            iconTurntableDividingLine.icon = dividingLineIcon
+                            iconTurntableDividingLine.bitmap = it
+                            iconTurntableDividingLine.initShader()
+                        } ?: kotlin.run {
+                            iconTurntableDividingLine.icon = 0
+                            iconTurntableDividingLine.bitmap = null
                         }
                     }
 
@@ -271,14 +281,20 @@ class TurntableView @JvmOverloads constructor(
         val radius = turntableBuilder.dividingLineWidth
         startAngle += currAngle
         for (i in 0 until turntableBuilder.numberPart) {
-            mPaint.color = turntableBuilder.dividingLineColor
             mPaint.strokeWidth = turntableBuilder.dividingLineSize
 
             //画一个扇形
-            val angleLine = Math.toRadians(startAngle.toDouble())
-            val lineX: Float = center + (radius * cos(angleLine)).toFloat()
-            val lineY: Float = center + (radius * sin(angleLine)).toFloat()
-            canvas?.drawLine(center, center, lineX, lineY, mPaint)
+            iconTurntableDividingLine.bitmapShader?.let {
+                mPaint.shader = iconTurntableDividingLine.bitmapShader
+            } ?: kotlin.run {
+                mPaint.color = turntableBuilder.dividingLineColor
+            }
+            canvas?.withSave {
+                this.translate(center, center)
+                this.rotate(startAngle)
+                canvas.drawLine(0f, 0f, 0f, radius, mPaint)
+            }
+            mPaint.shader = null
 
 
             val angle = Math.toRadians((startAngle + mAngle / 2f).toDouble())

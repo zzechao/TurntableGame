@@ -1,8 +1,10 @@
 package com.zhouz.turntablelib
 
 import android.graphics.Bitmap
+import android.graphics.BitmapShader
 import android.graphics.Matrix
 import android.graphics.RectF
+import android.graphics.Shader
 import android.view.View
 
 
@@ -16,6 +18,8 @@ data class IconData(
     var bitmap: Bitmap? = null,
     val matrix: Matrix = Matrix()
 ) {
+
+    var bitmapShader: BitmapShader? = null
 
     private var isSettingMatrix: Boolean = false
     fun setMatrix(view: View) {
@@ -32,6 +36,12 @@ data class IconData(
             val left = (view.measuredWidth.toFloat() - it.width.toFloat()) / 2f
             val top = (view.measuredHeight.toFloat() - it.height.toFloat()) / 2f
             matrix.postTranslate(left, top)
+        }
+    }
+
+    fun initShader() {
+        bitmapShader = bitmap?.let {
+            BitmapShader(it, Shader.TileMode.MIRROR, Shader.TileMode.REPEAT)
         }
     }
 }
