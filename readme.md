@@ -5,10 +5,28 @@
 `TurntableGame` 声明式构造转盘数据，实时动态变更，支持定义每个位置的样式，添加动画
 
 ## 效果图
-
 ### 大概演示
 ![image](https://github.com/zzechao/TurntableGame/blob/master/ex.gif)
 
+## 用法
+    根目录build.gradle中添加
+    snapshot包
+    maven("https://s01.oss.sonatype.org/service/local/repositories/snapshots/content/")
+    release包
+    maven("https://s01.oss.sonatype.org/service/local/repositories/releases/content/")
+
+```groovy
+    repositories {
+        maven("https://s01.oss.sonatype.org/service/local/repositories/snapshots/content/")
+        maven("https://s01.oss.sonatype.org/service/local/repositories/releases/content/")
+    }
+```
+
+model build.gradle添加
+
+```groovy
+     implementation "io.github.zzechao:turntablelib:1.0.0-SNAPSHOT"
+```
 
 ### 属性信息
 ```kotlin
