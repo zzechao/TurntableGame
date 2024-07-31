@@ -272,8 +272,9 @@ class TurntableView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
+        val scale = measuredWidth.toFloat() / defaultSize
         bgIconData.bitmap?.let {
-            bgIconData.setMatrix(this)
+            bgIconData.setMatrix(this, scale)
             bgIconData.matrix.postRotate(currAngle, center, center)
             canvas?.drawBitmap(it, bgIconData.matrix, mPaint)
         }
@@ -296,9 +297,10 @@ class TurntableView @JvmOverloads constructor(
             canvas?.withSave {
                 this.translate(center, center)
                 this.rotate(startAngle - 180f)
-                canvas.drawLine(0f, 0f, 0f, radius, mPaint)
+                canvas.drawLine(0f, 0f, 0f, radius * scale, mPaint)
                 if (turntableBuilder.dividingNumberShow) {
-                    canvas.drawText("$i", 0f, radius, textPaint)
+                    textPaint.textSize *= scale
+                    canvas.drawText("$i", 0f, radius * scale, textPaint)
                 }
                 mPaint.shader = null
             }
@@ -308,10 +310,12 @@ class TurntableView @JvmOverloads constructor(
             val angle = Math.toRadians((viewAngle).toDouble())
 
             //确定图片在圆弧中 中心点的位置
-            val x: Float = (center + (radius - context.resources.getDimension(R.dimen.turn_seat_radius_width)) * cos(angle)).toFloat()
-            val y: Float = (center + (radius - context.resources.getDimension(R.dimen.turn_seat_radius_width)) * sin(angle)).toFloat()
+            val x: Float = (center + scale * (radius - context.resources.getDimension(R.dimen.turn_seat_radius_width)) * cos(angle)).toFloat()
+            val y: Float = (center + scale * (radius - context.resources.getDimension(R.dimen.turn_seat_radius_width)) * sin(angle)).toFloat()
             val partView = partViews.getOrNull(i)
             partView?.let {
+                it.scaleX = scale
+                it.scaleY = scale
                 it.layout(
                     (x - it.measuredWidth / 2f).toInt(), (y - it.measuredHeight / 2f).toInt(),
                     (x + it.measuredWidth / 2f).toInt(), (y + it.measuredHeight / 2f).toInt()
@@ -324,20 +328,20 @@ class TurntableView @JvmOverloads constructor(
         mPaint.alpha = 255
 
         iconTurntableNeedle.bitmap?.let {
-            iconTurntableNeedle.setMatrix(this)
-            val left = (measuredWidth.toFloat() - it.width.toFloat()) / 2f
-            val top = (measuredHeight.toFloat() - it.height.toFloat()) / 2f -
-                    turntableBuilder.turntableNeedleTop
-            iconTurntableNeedle.matrix.setTranslate(left, top)
+            iconTurntableNeedle.setMatrix(this, scale) {
+                iconTurntableNeedle.matrix.postTranslate(0f, -turntableBuilder.turntableNeedleTop * scale)
+            }
             canvas?.drawBitmap(it, iconTurntableNeedle.matrix, mPaint)
         }
 
         bgNeedleIconData.bitmap?.let {
-            bgNeedleIconData.setMatrix(this)
+            bgNeedleIconData.setMatrix(this, scale)
             canvas?.drawBitmap(it, bgNeedleIconData.matrix, mPaint)
         }
 
         centerView?.let {
+            it.scaleX = scale
+            it.scaleY = scale
             val left = (measuredWidth - it.measuredWidth) / 2
             val top = (measuredHeight - it.measuredHeight) / 2
             it.layout(left, top, left + it.measuredWidth, top + it.measuredHeight)
@@ -409,7 +413,7 @@ class TurntableView @JvmOverloads constructor(
         }
         anim?.interpolator = turntableBuilder.interpolator
         anim?.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationStart(animation: Animator?) {
+            override fun onAnimationStart(animation: Animator) {
                 super.onAnimationStart(animation)
                 onStart?.invoke()
             }
@@ -420,7 +424,7 @@ class TurntableView @JvmOverloads constructor(
                 onEnd?.invoke()
             }
 
-            override fun onAnimationCancel(animation: Animator?) {
+            override fun onAnimationCancel(animation: Animator) {
                 super.onAnimationCancel(animation)
                 isTurning = false
                 onCancel?.invoke()
@@ -473,19 +477,20 @@ class TurntableView @JvmOverloads constructor(
         start: PointF, end: PointF, url: String, duringMillisecond: Long = 200,
         displayHeightSize: Int = 80, callback: suspend () -> Bitmap
     ) {
+        val scale = measuredWidth.toFloat() / defaultSize
         AnimEncoder().buildAnimNode {
             imageNode {
                 this.url = url
                 this.displayHeightSize = displayHeightSize
                 startNode {
                     point = start
-                    scaleX = 1f
-                    scaleY = 1f
+                    scaleX = scale
+                    scaleY = scale
                     alpha = 255
                     endNode {
                         point = end
-                        scaleX = 1f
-                        scaleY = 1f
+                        scaleX = scale
+                        scaleY = scale
                         alpha = 30
                         durTime = duringMillisecond
                         interpolator = InterpolatorEnum.Linear.type
@@ -524,10 +529,10 @@ class TurntableView @JvmOverloads constructor(
             }
         }
 
-        override fun onViewAttachedToWindow(v: View?) {
+        override fun onViewAttachedToWindow(v: View) {
         }
 
-        override fun onViewDetachedFromWindow(v: View?) {
+        override fun onViewDetachedFromWindow(v: View) {
             if (isAdd) {
                 view.viewTreeObserver.removeOnPreDrawListener(this)
             }

@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.zhouz.turntablelib"
-    compileSdk = 31
+    compileSdk = 33
 
     defaultConfig {
         minSdk = 16
@@ -29,5 +29,4 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.canvasanimation)
-    implementation(libs.vap)
 }

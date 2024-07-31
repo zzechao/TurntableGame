@@ -3,7 +3,6 @@ package com.zhouz.turntablelib
 import android.graphics.Bitmap
 import android.graphics.BitmapShader
 import android.graphics.Matrix
-import android.graphics.RectF
 import android.graphics.Shader
 import android.view.View
 
@@ -22,20 +21,16 @@ data class IconData(
     var bitmapShader: BitmapShader? = null
 
     private var isSettingMatrix: Boolean = false
-    fun setMatrix(view: View) {
+
+    fun setMatrix(view: View, scale: Float, builder: (() -> Unit)? = null) {
         if (isSettingMatrix) return
         isSettingMatrix = true
         bitmap?.let {
-            val src = RectF(0f, 0f, it.width.toFloat(), it.height.toFloat())
-            val dst = RectF(0f, 0f, view.measuredWidth.toFloat(), view.measuredHeight.toFloat())
-            matrix.setRectToRect(src, dst, Matrix.ScaleToFit.CENTER)
-            matrix.postScale(
-                it.width.toFloat() / view.measuredWidth.toFloat(),
-                it.height.toFloat() / view.measuredHeight.toFloat()
-            )
-            val left = (view.measuredWidth.toFloat() - it.width.toFloat()) / 2f
-            val top = (view.measuredHeight.toFloat() - it.height.toFloat()) / 2f
+            matrix.postScale(scale, scale)
+            val left = (view.measuredWidth.toFloat() - it.width.toFloat() * scale) / 2f
+            val top = (view.measuredHeight.toFloat() - it.height.toFloat() * scale) / 2f
             matrix.postTranslate(left, top)
+            builder?.invoke()
         }
     }
 

@@ -73,37 +73,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val imageView = findViewById<ImageView>(R.id.icon)
+
         //imageView.setBackgroundColor(Color.WHITE)
-        val circleCrop: Transformation<Bitmap> = CircleCrop()
-        Glide.with(imageView)
-            .load(R.mipmap.bg01)
-            .optionalTransform(circleCrop)
-            .optionalTransform(WebpDrawable::class.java, WebpDrawableTransformation(circleCrop))
-            .addListener(object : RequestListener<Drawable> {
-                override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>, isFirstResource: Boolean): Boolean {
-                    return false
-                }
 
-                override fun onResourceReady(resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean): Boolean {
-                    (resource as WebpDrawable).apply { loopCount = Int.MAX_VALUE }
-                    return false
-                }
-            }).into(object : CustomViewTarget<ImageView, Drawable>(imageView) {
-                override fun onLoadFailed(errorDrawable: Drawable?) {
-                }
-
-                override fun onResourceCleared(placeholder: Drawable?) {
-                }
-
-                override fun onResourceReady(resource: Drawable, transition: Transition<in Drawable>?) {
-                    imageView.setImageDrawable(resource)
-                    (resource as WebpDrawable).start()
-
-                    (resource as WebpDrawable).stop()
-                    Log.i(TAG, "${resource.frameIndex}")
-                }
-            })
         //(imageView.drawable as WebpDrawable).stop()
 
         //val vap = AnimView(this)
@@ -125,7 +97,7 @@ class MainActivity : AppCompatActivity() {
                     //imageView.rotation = it.animatedValue as Float
                 }
 
-                //turntableBg = R.mipmap.bg03
+                turntableBg = R.mipmap.bg03
                 turntableNeedleBg = R.mipmap.bg02
                 turntableNeedleIcon = R.mipmap.jiantou
                 numberPart = 8
@@ -189,14 +161,8 @@ class MainActivity : AppCompatActivity() {
                     val index = Random.nextInt(userSize)
                     Toast.makeText(this@MainActivity, "position:$index", Toast.LENGTH_LONG).show()
                     turn.startTurn(index, onStart = {
-                        (imageView.drawable as? WebpDrawable)?.start()
                     }, onEnd = {
-                        (imageView.drawable as? WebpDrawable)?.apply {
-                            stop()
-                            Log.i(TAG, "${this.frameIndex}")
-                        }
                     }, onCancel = {
-                        (imageView.drawable as? WebpDrawable)?.stop()
                     })
                 }) {
                     numberPart = userSize

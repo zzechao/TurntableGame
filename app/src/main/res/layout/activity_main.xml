@@ -4,20 +4,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ImageView
-        android:id="@+id/icon"
-        android:layout_width="350dp"
-        android:padding="3dp"
-        android:layout_gravity="center"
-        android:layout_height="350dp" />
-
     <com.zhouz.turntablelib.TurntableView
         android:id="@+id/view"
-        android:layout_width="350dp"
-        android:layout_height="350dp"
-        android:layout_gravity="center"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:layout_gravity="right"
         turntableView:CTBackground="@mipmap/bg03" />
-
 
     <Button
         android:id="@+id/mStart"
