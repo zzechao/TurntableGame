@@ -3,7 +3,6 @@ package com.zhouz.turntablelib
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Bitmap
@@ -52,7 +51,7 @@ import kotlin.math.sin
 
 private const val TAG = "TurntableView"
 
-@SuppressLint("CustomViewStyleable")
+
 class TurntableView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
@@ -70,26 +69,38 @@ class TurntableView @JvmOverloads constructor(
         isDither = true
     }
 
-    private val textPaint: TextPaint = TextPaint().apply {
-        style = Paint.Style.FILL_AND_STROKE
-        isAntiAlias = true
-        isDither = true
-        setColor(Color.BLACK)
-        textSize = 40f
+    private val textPaint: TextPaint by lazy {
+        TextPaint().apply {
+            style = Paint.Style.FILL_AND_STROKE
+            isAntiAlias = true
+            isDither = true
+            setColor(Color.BLACK)
+            textSize = 40f
+        }
     }
 
+    // 每一部分的view
     private val partViews = mutableListOf<View>()
+
+    // 每一部分的角度
     private var mAngle = 0f
 
-
+    // 中间的view
     private var centerView: View? = null
-    private var turntableBgView: View? = null
 
+    // 当前的角度，转动需要
     private var currAngle = 0f
 
+    // 背景信息
     private val bgIconData = IconData()
+
+    // 指针背景信息
     private val bgNeedleIconData = IconData()
+
+    // 指针信息
     private val iconTurntableNeedle = IconData()
+
+    // 分割线信息
     private val iconTurntableDividingLine = IconData()
 
     private val childBuilder: IPartyChild by lazy {
@@ -98,11 +109,10 @@ class TurntableView @JvmOverloads constructor(
                 null
             }
             override var centerChild: View? = null
-
-            override var turntableBgView: View? = null
         }
     }
 
+    // 初始化部分信息
     private val turntableBuilder: ITurntableBuilder by lazy {
         object : ITurntableBuilder {
             override var turntableBg: Int = 0
@@ -112,7 +122,7 @@ class TurntableView @JvmOverloads constructor(
             override var turntableNeedleTop: Int = context.resources.getDimensionPixelOffset(R.dimen.turn_needle_top)
             override var numberPart: Int = 8
             override var mMinTimes: Int = 6
-            override var mDurationTime: Long = 2000L
+            override var mDurationMillisecond: Long = 2000L
             override var startAngle: Float = 0f
 
             override var dividingLineColor: Int = 0x88FFFFFF.toInt()
@@ -130,6 +140,7 @@ class TurntableView @JvmOverloads constructor(
                 child.invoke(childBuilder)
             }
 
+            // 开始构建需要view 和属性信息
             override fun build(finish: (() -> Unit)?) {
                 Log.i(TAG, "build viewScope:$viewScope")
                 viewScope?.launch(Dispatchers.Main) {
@@ -175,9 +186,9 @@ class TurntableView @JvmOverloads constructor(
                         }
                     }
 
-                    //每一个扇形的角度
+                    // 每一个扇形的角度
                     withContext(Dispatchers.Main) {
-                        mAngle = 360f / numberPart
+                        mAngle = 360f / numberPart // 计算出那个部分所占角度
                         currAngle = 0f
                         Log.i(TAG, "build mAngle:$mAngle numberPart:$numberPart")
                         for (i in 0 until numberPart) {
@@ -197,16 +208,6 @@ class TurntableView @JvmOverloads constructor(
                         if (centerView?.parent == null) {
                             centerView = childBuilder.centerChild
                             centerView?.let {
-                                val width = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.AT_MOST)
-                                val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
-                                it.measure(width, height)
-                                addView(it, 0)
-                            }
-                        }
-
-                        if (turntableBgView?.parent == null) {
-                            turntableBgView = childBuilder.turntableBgView
-                            turntableBgView?.let {
                                 val width = MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.AT_MOST)
                                 val height = MeasureSpec.makeMeasureSpec(measuredHeight, MeasureSpec.AT_MOST)
                                 it.measure(width, height)
@@ -269,14 +270,9 @@ class TurntableView @JvmOverloads constructor(
     }
 
 
-    @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
-        turntableBgView?.let {
-            val left = (measuredWidth - it.measuredWidth) / 2
-            val top = (measuredHeight - it.measuredHeight) / 2
-            it.layout(left, top, left + it.measuredWidth, top + it.measuredHeight)
-        } ?: bgIconData.bitmap?.let {
+        bgIconData.bitmap?.let {
             bgIconData.setMatrix(this)
             bgIconData.matrix.postRotate(currAngle, center, center)
             canvas?.drawBitmap(it, bgIconData.matrix, mPaint)
@@ -348,12 +344,13 @@ class TurntableView @JvmOverloads constructor(
         }
     }
 
-
+    /**
+     * 设置转盘属性信息
+     */
     fun setting(
         finish: (() -> Unit)? = null,
         builder: ITurntableBuilder.() -> Unit
     ) {
-        Log.i(TAG, "setting")
         builder.invoke(turntableBuilder)
         turntableBuilder.build(finish)
     }
@@ -369,10 +366,20 @@ class TurntableView @JvmOverloads constructor(
         viewScope = null
     }
 
+    /**
+     * 取消转动
+     */
     fun cancelTurn() {
         anim?.cancel()
     }
 
+    /**
+     * 开始转动
+     * @param pos 转动位置
+     * @param onStart 开始回调
+     * @param onEnd 结束回调
+     * @param onCancel 取消回调
+     */
     fun startTurn(
         pos: Int,
         onStart: (() -> Unit)? = null,
@@ -394,7 +401,7 @@ class TurntableView @JvmOverloads constructor(
         anim = ValueAnimator.ofFloat(currAngle, newAngle.toFloat())
 
         // 动画的持续时间，执行多久？
-        anim?.setDuration(turntableBuilder.mDurationTime)
+        anim?.setDuration(turntableBuilder.mDurationMillisecond)
         anim?.addUpdateListener {   //将动画的过程态回调给调用者
             currAngle = it.animatedValue as Float
             turntableBuilder.animatorUpdateListener?.onAnimationUpdate(it)
@@ -420,7 +427,7 @@ class TurntableView @JvmOverloads constructor(
             }
         })
         // 正式开始启动执行动画
-        //anim?.start()
+        anim?.start()
     }
 
     private fun View.findFragmentOfGivenView(): Fragment? {
@@ -446,13 +453,24 @@ class TurntableView @JvmOverloads constructor(
         return null
     }
 
-
+    /**
+     * 获取对应位置view信息
+     */
     fun getPartyView(index: Int): View? {
         return partViews.getOrNull(index)
     }
 
+    /**
+     * 送礼动画
+     * @param start 开始坐标
+     * @param end 结束坐标
+     * @param url 链接
+     * @param duringMillisecond 动画时长
+     * @param displayHeightSize 高度
+     * @param callback 构建bitmap
+     */
     fun showAnim(
-        start: PointF, end: PointF, url: String, duringTime: Long = 200,
+        start: PointF, end: PointF, url: String, duringMillisecond: Long = 200,
         displayHeightSize: Int = 80, callback: suspend () -> Bitmap
     ) {
         AnimEncoder().buildAnimNode {
@@ -469,7 +487,7 @@ class TurntableView @JvmOverloads constructor(
                         scaleX = 1f
                         scaleY = 1f
                         alpha = 30
-                        durTime = duringTime
+                        durTime = duringMillisecond
                         interpolator = InterpolatorEnum.Linear.type
                     }
                 }
@@ -489,8 +507,10 @@ class TurntableView @JvmOverloads constructor(
         }
     }
 
-    inner class DrawListener(val view: View) : ViewTreeObserver.OnPreDrawListener, OnAttachStateChangeListener {
-
+    /**
+     * 等待绘制前显示
+     */
+    inner class DrawListener(private val view: View) : ViewTreeObserver.OnPreDrawListener, OnAttachStateChangeListener {
         private var isAdd = false
 
         init {
@@ -514,7 +534,9 @@ class TurntableView @JvmOverloads constructor(
         }
 
         override fun onPreDraw(): Boolean {
-            if (view.left == 0 && view.top == 0) {
+            if ((view.left == 0 && view.top == 0) ||
+                (view.right == 0 && view.top == 0)
+            ) {
                 view.visibility = View.INVISIBLE
             } else {
                 view.visibility = View.VISIBLE

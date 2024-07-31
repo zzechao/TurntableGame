@@ -11,7 +11,7 @@ import android.view.View
 /**
  * @author:zhouz
  * @date: 2024/5/17 14:55
- * description：图标位置
+ * description：图标绘制信息
  */
 data class IconData(
     var icon: Int = 0,
