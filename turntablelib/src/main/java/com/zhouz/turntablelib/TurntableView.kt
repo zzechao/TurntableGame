@@ -346,8 +346,6 @@ class TurntableView @JvmOverloads constructor(
             val top = (measuredHeight - it.measuredHeight) / 2
             it.layout(left, top, left + it.measuredWidth, top + it.measuredHeight)
         }
-
-        Log.i("zzzc", "---------------------------------------------")
     }
 
 
