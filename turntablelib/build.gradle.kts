@@ -2,6 +2,7 @@ plugins {
     id("com.android.library")
     id("kotlin-android")
 }
+apply { from("${rootProject.projectDir}/publish-mavencentral.gradle") }
 
 android {
     namespace = "com.zhouz.turntablelib"

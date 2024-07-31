@@ -129,7 +129,7 @@ class TurntableView @JvmOverloads constructor(
             override var dividingLineIcon: Int = 0
             override var dividingLineSize: Float = 2f
             override var dividingLineWidth: Float = context.resources.getDimension(R.dimen.turn_dividing_width)
-            override var dividingNumberShow: Boolean = true
+            override var dividingNumberShow: Boolean = false
 
             override var interpolator: Interpolator = AccelerateDecelerateInterpolator()
 
