@@ -8,8 +8,10 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PointF
+import android.text.TextPaint
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
@@ -32,7 +34,6 @@ import com.base.animation.xml.node.coder.InterpolatorEnum
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.job
@@ -51,7 +52,6 @@ import kotlin.math.sin
 
 private const val TAG = "TurntableView"
 
-@OptIn(ObsoleteCoroutinesApi::class)
 @SuppressLint("CustomViewStyleable")
 class TurntableView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -68,6 +68,14 @@ class TurntableView @JvmOverloads constructor(
         style = Paint.Style.FILL_AND_STROKE
         isAntiAlias = true
         isDither = true
+    }
+
+    private val textPaint: TextPaint = TextPaint().apply {
+        style = Paint.Style.FILL_AND_STROKE
+        isAntiAlias = true
+        isDither = true
+        setColor(Color.BLACK)
+        textSize = 40f
     }
 
     private val partViews = mutableListOf<View>()
@@ -105,15 +113,15 @@ class TurntableView @JvmOverloads constructor(
             override var numberPart: Int = 8
             override var mMinTimes: Int = 6
             override var mDurationTime: Long = 2000L
-            override var startAngle: Float = 90f
+            override var startAngle: Float = 0f
 
             override var dividingLineColor: Int = 0x88FFFFFF.toInt()
             override var dividingLineIcon: Int = 0
             override var dividingLineSize: Float = 2f
             override var dividingLineWidth: Float = context.resources.getDimension(R.dimen.turn_dividing_width)
+            override var dividingNumberShow: Boolean = true
 
             override var interpolator: Interpolator = AccelerateDecelerateInterpolator()
-
 
             override var photoLoader: (suspend (Any) -> Bitmap?)? = null
             override var animatorUpdateListener: ValueAnimator.AnimatorUpdateListener? = null
@@ -274,7 +282,6 @@ class TurntableView @JvmOverloads constructor(
             canvas?.drawBitmap(it, bgIconData.matrix, mPaint)
         }
 
-
         // 计算初始角度
         // 从最上面开始绘制扇形会好看一点
         var startAngle = -turntableBuilder.startAngle
@@ -289,19 +296,24 @@ class TurntableView @JvmOverloads constructor(
             } ?: kotlin.run {
                 mPaint.color = turntableBuilder.dividingLineColor
             }
+
             canvas?.withSave {
                 this.translate(center, center)
-                this.rotate(startAngle)
+                this.rotate(startAngle - 180f)
                 canvas.drawLine(0f, 0f, 0f, radius, mPaint)
+                if (turntableBuilder.dividingNumberShow) {
+                    canvas.drawText("$i", 0f, radius, textPaint)
+                }
+                mPaint.shader = null
             }
-            mPaint.shader = null
 
 
-            val angle = Math.toRadians((startAngle + mAngle / 2f).toDouble())
+            val viewAngle = startAngle + mAngle / 2 - 90f
+            val angle = Math.toRadians((viewAngle).toDouble())
+
             //确定图片在圆弧中 中心点的位置
             val x: Float = (center + (radius - context.resources.getDimension(R.dimen.turn_seat_radius_width)) * cos(angle)).toFloat()
             val y: Float = (center + (radius - context.resources.getDimension(R.dimen.turn_seat_radius_width)) * sin(angle)).toFloat()
-
             val partView = partViews.getOrNull(i)
             partView?.let {
                 it.layout(
@@ -334,6 +346,8 @@ class TurntableView @JvmOverloads constructor(
             val top = (measuredHeight - it.measuredHeight) / 2
             it.layout(left, top, left + it.measuredWidth, top + it.measuredHeight)
         }
+
+        Log.i("zzzc", "---------------------------------------------")
     }
 
 
@@ -408,7 +422,7 @@ class TurntableView @JvmOverloads constructor(
             }
         })
         // 正式开始启动执行动画
-        anim?.start()
+        //anim?.start()
     }
 
     private fun View.findFragmentOfGivenView(): Fragment? {

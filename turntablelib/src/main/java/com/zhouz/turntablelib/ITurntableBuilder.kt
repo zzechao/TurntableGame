@@ -1,6 +1,5 @@
 package com.zhouz.turntablelib
 
-import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator.AnimatorUpdateListener
 import android.graphics.Bitmap
 import android.view.View
@@ -27,8 +26,9 @@ interface ITurntableBuilder {
     var dividingLineIcon: Int
     var dividingLineSize: Float
     var dividingLineWidth: Float
+    var dividingNumberShow: Boolean
 
-    var interpolator : Interpolator
+    var interpolator: Interpolator
 
     var photoLoader: (suspend (Any) -> Bitmap?)?
 
@@ -39,7 +39,9 @@ interface ITurntableBuilder {
     fun build(finish: (() -> Unit)? = null)
 }
 
-
+/**
+ * 每个item子布局view的绘制
+ */
 interface IPartyChild {
     var partyChild: (Int) -> View?
 
