@@ -7,77 +7,121 @@
 ## 效果图
 
 ### 大概演示
-![image](https://github.com/zzechao/TurntableGame/blob/master/l0sbx-utjoe.gif)
+![image](https://github.com/zzechao/TurntableGame/blob/master/ex.gif)
 
 
-### 动画库初始化
-
+### 属性信息
 ```kotlin
+    interface ITurntableBuilder {
+        // 转盘背景
+        var turntableBg: Int
+    
+        // 转盘中心背景
+        var turntableNeedleBg: Int
+    
+        // 转盘指针图标
+        var turntableNeedleIcon: Int
+    
+        // 转盘指针图标距离 中点 的上间距
+        var turntableNeedleTop: Int
+    
+        // 转盘份数
+        var numberPart: Int
+    
+        // 最少转动次数
+        var mMinTimes: Int
+    
+        // 装懂时长
+        var mDurationMillisecond: Long
+    
+        // 开始角度
+        var startAngle: Float
+    
+        // 分割线颜色
+        var dividingLineColor: Int
+    
+        // 分割线图标
+        var dividingLineIcon: Int
+    
+        // 分割线高度
+        var dividingLineSize: Float
+    
+        // 分割线长度
+        var dividingLineWidth: Float
+    
+        // 是否显示分割线的序号
+        var dividingNumberShow: Boolean
+    
+        // 插值器
+        var interpolator: Interpolator
+    
+        // 图片加载类（图标或者图片加载返回上层构造）
+        var photoLoader: (suspend (Any) -> Bitmap?)?
+    
+        // 插值器监听
+        var animatorUpdateListener: AnimatorUpdateListener?
+    
+        // 每部分的样式构造
+        fun partyChildBuild(child: IPartyChild.() -> Unit)
+    
+        // 构建
+        fun build(finish: (() -> Unit)? = null)
+    }
+    
+    /**
+     * 每个item子布局view的绘制
+     */
+    interface IPartyChild {
+        // 每部分view样式
+        var partyChild: (Int) -> View?
+    
+        // 中心view样式
+        var centerChild: View?
+    }
+```
+
+### 开始转动
+```kotlin
+    /**
+     * 开始转动
+     * @param pos 转动位置
+     * @param onStart 开始回调
+     * @param onEnd 结束回调
+     * @param onCancel 取消回调
+     */
+    fun startTurn(pos: Int, onStart: (() -> Unit)? = null, onEnd: (() -> Unit)? = null, onCancel: (() -> Unit)? = null) {}
+```
+
+#### 动画库初始化、设置例子，以及开始转动
+```kotlin
+    // 获取view
     val turn = findViewById<TurntableView>(R.id.view)
+    // 转盘信息设置
     turn.setting {
-        photoLoader = object : (suspend (Any) -> Bitmap?) {
-            override suspend fun invoke(p1: Any): Bitmap? {
-                return if (p1 is Int) {
-                    BitmapFactory.decodeResource(this@MainActivity.resources, p1)
-                } else {
-                    null
-                }
-            }
-        }
-    
-        animatorUpdateListener = ValueAnimator.AnimatorUpdateListener {
-            //imageView.rotation = it.animatedValue as Float
-        }
-    
-        //turntableBg = R.mipmap.bg03
+        // 图片加载
+        photoLoader = object : (suspend (Any) -> Bitmap?) { override suspend fun invoke(p1: Any): Bitmap? { return null } }
+        // 插值器回调
+        animatorUpdateListener = ValueAnimator.AnimatorUpdateListener {}
+        // 转盘背景
+        turntableBg = R.mipmap.bg03
+        // 指针布局
         turntableNeedleBg = R.mipmap.bg02
+        // 指针背景
         turntableNeedleIcon = R.mipmap.jiantou
+        // 切割份数
         numberPart = 8
     
+        // 每部分子view设置
         partyChildBuild {
-            partyChild = { index ->
-                userViews.getOrNull(index) ?: LayoutInflater.from(this@MainActivity).inflate(R.layout.layout_part_view, null).apply {
-                    Log.i("zzc", "setting index:$index this:$this")
-                    this.findViewById<TextView>(R.id.index).text = "$index"
-                    this.setOnClickListener {
-                        position = index
-                        Log.i("zzc", "click index:$index it:$it")
-                        it ?: return@setOnClickListener
-                        userViews.add(it)
-                        userSize++
-                        this.findViewById<ImageView>(R.id.head).setImageResource(R.mipmap.head)
-                        //Toast.makeText(this@MainActivity, "index:$index", Toast.LENGTH_LONG).show()
-                    }
-                }
+            // 每部分view设置
+            partyChild = { index:Int ->
+                userViews.getOrNull(index) ?: LayoutInflater.from(this@MainActivity).inflate(R.layout.layout_part_view, null)
             }
-    
-            centerChild = LayoutInflater.from(this@MainActivity).inflate(R.layout.layout_center_part, null).apply {
-                this.findViewById<TextView>(R.id.size).text = "x$giftSize"
-                this.setOnClickListener {
-                    this.findViewById<ImageView>(R.id.gift).setImageResource(R.mipmap.head)
-                    giftSize++
-                    this.findViewById<TextView>(R.id.size).text = "x$giftSize"
-    
-                    val start = turn.getPartyView(position)
-                    val end = it
-                    val startwidth = start?.measuredWidth ?: 0
-                    val startheight = start?.measuredHeight ?: 0
-                    val starttop = start?.top ?: 0
-                    val startleft = start?.left ?: 0
-    
-                    val endwidth = end?.measuredWidth ?: 0
-                    val endheight = end?.measuredHeight ?: 0
-                    val endtop = end?.top ?: 0
-                    val endleft = end?.left ?: 0
-    
-                    turn.showAnim(
-                        PointF(startleft + startwidth / 2f, starttop + startheight / 2f),
-                        PointF(endleft + endwidth / 2f, endtop + endheight / 2f)
-                    ) {
-                        BitmapFactory.decodeResource(this@MainActivity.resources, R.mipmap.head)
-                    }
-                }
-            }
+            
+            // 中心view设置
+            centerChild = LayoutInflater.from(this@MainActivity).inflate(R.layout.layout_center_part, null)
         }
     }
+    
+    turn.startTurn(pos, onStart = {}, onEnd = {}, onCancel = {})
 ```

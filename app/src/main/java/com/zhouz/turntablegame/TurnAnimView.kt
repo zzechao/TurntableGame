@@ -27,7 +27,6 @@ class TurnAnimView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
 ) : AnimView(context, attrs) {
 
-
     init {
         setAnimListener(object : IAnimListener {
             override fun onFailed(errorType: Int, errorMsg: String?) {
