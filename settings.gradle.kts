@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 rootProject.name = "TurntableGame"
 include(":app")
 include(":turntablelib")
+include(":dimens")

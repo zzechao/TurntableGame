@@ -10,6 +10,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
+            <option value="$PROJECT_DIR$/dimens" />
             <option value="$PROJECT_DIR$/turntablelib" />
           </set>
         </option>
